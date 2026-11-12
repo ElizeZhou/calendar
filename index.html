@@ -234,6 +234,7 @@
           <div class="cnote">🔗 第一本以外的日曆可以複製連結，邀請別人一起編輯</div>
           <form id="calAdd" class="caladd"><input id="calNew" maxlength="20" placeholder="請輸入日曆名稱" aria-label="新日曆名稱"><button type="submit" class="primary">新增</button></form>
           <button type="button" id="impBtn" class="impbtn">匯入行程到這本日曆</button>
+          <button type="button" id="wgBtn" class="impbtn">📱 複製手機小工具程式碼</button>
           <input type="file" id="impFile" accept=".ics,.json,text/calendar,application/json" hidden>
         </div>
       </div>
@@ -377,15 +378,46 @@ function saveLocalMemos(){try{localStorage.setItem(MEMO_KEY,JSON.stringify(memos
 // 第一本日曆存在 users/{uid}/events，只有自己看得到；
 // 其他日曆存在 calendars/{id}，可以複製連結邀請別人一起編輯。
 let nameFixed=new Set(), unsubs=[], calUnsubs={}, personal={}, shared={}, settingsRef=null, sharedMeta=[], mainName=DEFAULT_CAL.name;
-function stopAll(){unsubs.forEach(u=>u());unsubs=[];Object.values(calUnsubs).forEach(u=>u());calUnsubs={};personal={};shared={};sharedMeta=[];mainName=DEFAULT_CAL.name;memos={}}
+function stopAll(){unsubs.forEach(u=>u());unsubs=[];Object.values(calUnsubs).forEach(u=>u());calUnsubs={};personal={};shared={};sharedMeta=[];mainName=DEFAULT_CAL.name;memos={};widgetKey=null;widgetLast=""}
 const memoRef=k=>{const [cal,ym]=k.split("|"); return cal==="main"?doc(fdb,"users",myUid,"memos",ym):doc(fdb,"calendars",cal,"memos",ym)};
 function setMemos(cal,snap){for(const k of Object.keys(memos)) if(k.startsWith(cal+"|")) delete memos[k]; snap.forEach(d=>{memos[cal+"|"+d.id]=d.data().text||""}); renderMemo()}
+// ---- 手機桌面小工具：把接下來 14 天的行程另外存一份到 widgets/{小工具密碼} ----
+let widgetKey=null, widgetTimer=null, widgetLast="";
+const WCOL={c1:"#f7f4f4",c2:"#ff8a3d",c3:"#2ea7ff",c4:"#b23bb0",c5:"#2f8f55",c6:"#ff3b3b",c7:"#FFE218",c8:"#FB6482"};
+function widgetPayload(){
+  const today=ymd(new Date()), days=[];
+  for(let i=0;i<14;i++){
+    const d=addDays(today,i), items=[];
+    const h=holidayOf(d); if(h) items.push({t:h.name,c:WCOL.c3,o:-1});
+    for(const e of Object.values(events)) for(const sl of slotsOf(e)){
+      if(d>=sl.date&&d<=(sl.endDate||sl.date)){items.push({t:e.title||"（無標題）",c:WCOL[e.color]||WCOL.c1,o:ordOf(e)});break}
+    }
+    items.sort((a,b)=>a.o-b.o||a.t.localeCompare(b.t));
+    days.push({d,items:items.map(({t,c})=>({t,c}))});
+  }
+  return JSON.stringify({updated:Date.now(),days});
+}
+function scheduleWidget(){
+  if(!store||!widgetKey) return;
+  clearTimeout(widgetTimer);
+  widgetTimer=setTimeout(async()=>{
+    const json=widgetPayload(), cmp=json.replace(/"updated":\d+,/,"");
+    if(cmp===widgetLast) return;
+    try{await setDoc(doc(fdb,"widgets",widgetKey),{uid:myUid,json,updated:Date.now()}); widgetLast=cmp}
+    catch(e){console.error("widget",e)}
+  },2500);
+}
+async function copyWidget(){
+  if(!store||!widgetKey){showToast("請先登入，再複製小工具程式碼");return}
+  widgetLast=""; scheduleWidget();
+  await copyText(WIDGET_CODE.replace("@@KEY@@",widgetKey),"已複製小工具程式碼，到 Scriptable 貼上就好");
+}
 function rebuild(){
   const all={};
   for(const [id,e] of Object.entries(personal)) all[id]={...e,cal:"main"};
   for(const [cid,evs] of Object.entries(shared)) for(const [id,e] of Object.entries(evs)) all[id]={...e,cal:cid};
   events=all;
-  setCals([{id:"main",name:mainName},...sharedMeta]); render();
+  setCals([{id:"main",name:mainName},...sharedMeta]); render(); scheduleWidget();
 }
 function initStore(){
   loadLocal(); loadLocalCals(); loadLocalMemos(); render();
@@ -406,7 +438,13 @@ function initStore(){
     await migrateLocal();
     if(pendingJoin) await joinCal(pendingJoin);
     unsubs.push(onSnapshot(collection(fdb,"users",user.uid,"memos"),s=>setMemos("main",s),err=>console.error(err)));
-    unsubs.push(onSnapshot(settingsRef,s=>{mainName=(s.exists()&&s.data().mainName)||DEFAULT_CAL.name;rebuild()},err=>console.error(err)));
+    unsubs.push(onSnapshot(settingsRef,s=>{mainName=(s.exists()&&s.data().mainName)||DEFAULT_CAL.name;
+      widgetKey=(s.exists()&&s.data().widgetKey)||null;
+      if(!widgetKey&&!s.metadata.fromCache){ // 第一次：產生一組小工具專用密碼
+        const k=Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>b.toString(16).padStart(2,"0")).join("");
+        setDoc(settingsRef,{widgetKey:k},{merge:true}).catch(e=>console.error(e));
+      }
+      rebuild()},err=>console.error(err)));
     const timer=setTimeout(()=>setStatus("暫時連不上雲端，顯示的可能不是最新資料"),10000);
     unsubs.push(onSnapshot(store,{includeMetadataChanges:true},snap=>{
       personal={}; snap.forEach(d=>{personal[d.id]=d.data()}); rebuild();
@@ -913,6 +951,8 @@ function parseJSONImport(txt){
     return {title:String(e.title||"（無標題）").trim(),date,endDate:end>date?end:"",note:String(e.note||"").trim(),color:c}}).filter(e=>/^\d{4}-\d{2}-\d{2}$/.test(e.date));
 }
 $("impBtn").onclick=()=>$("impFile").click();
+const WIDGET_CODE="// 我的行事曆｜iPhone 桌面小工具（Scriptable）\n// 這段程式由行事曆網站自動產生，裡面的 KEY 是你的小工具專用密碼，請不要分享給別人。\nconst KEY = \"@@KEY@@\";\nconst SITE = \"https://elizezhou.github.io/calendar/\";\nconst API = \"https://firestore.googleapis.com/v1/projects/my-calendar-5c812/databases/(default)/documents/widgets/\" + KEY + \"?key=AIzaSyBFIh1q9io5u_lLARQNVe3ncDO-bVK5aaU\";\n\nconst BG = new Color(\"#000000\"), INK = new Color(\"#f7f4f4\"), MUTED = new Color(\"#bdb4b7\"),\n      PINK = new Color(\"#f0e6e6\"), WINE = new Color(\"#5e0808\"), WEEKEND = new Color(\"#ff4655\");\nconst WD = [\"日\", \"一\", \"二\", \"三\", \"四\", \"五\", \"六\"];\nconst fm = FileManager.local(), cache = fm.joinPath(fm.documentsDirectory(), \"my-calendar-widget.json\");\n\nasync function load() {\n  try {\n    const r = await new Request(API).loadJSON();\n    const data = JSON.parse(r.fields.json.stringValue);\n    fm.writeString(cache, JSON.stringify(data));\n    return data;\n  } catch (e) {\n    if (fm.fileExists(cache)) return JSON.parse(fm.readString(cache));\n    return null;\n  }\n}\nconst pad = n => String(n).padStart(2, \"0\");\nconst ymd = d => d.getFullYear() + \"-\" + pad(d.getMonth() + 1) + \"-\" + pad(d.getDate());\nfunction label(k, today) {\n  const d = new Date(k + \"T00:00:00\"), t = new Date(today + \"T00:00:00\");\n  const diff = Math.round((d - t) / 864e5);\n  const base = (d.getMonth() + 1) + \"/\" + d.getDate() + \"（\" + WD[d.getDay()] + \"）\";\n  return diff === 0 ? \"今天 \" + base : diff === 1 ? \"明天 \" + base : base;\n}\n\nconst data = await load();\nconst family = config.widgetFamily || \"medium\";\nconst MAXL = family === \"small\" ? 6 : family === \"large\" ? 17 : 7;\nconst w = new ListWidget();\nw.backgroundColor = BG; w.url = SITE;\nw.setPadding(12, 14, 10, 14);\nw.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);\n\nconst now = new Date(), today = ymd(now);\nif (!data) {\n  const t = w.addText(\"請先打開行事曆網站並登入一次\"); t.textColor = INK; t.font = Font.systemFont(12);\n} else {\n  const days = (data.days || []).filter(x => x.d >= today);\n  function addLine(stack, text, color, font) {\n    const t = stack.addText(text); t.textColor = color; t.font = font; t.lineLimit = 1; return t;\n  }\n  function list(stack, maxLines) {\n    let used = 0;\n    for (const day of days) {\n      if (used >= maxLines) break;\n      if (day.d !== today && !day.items.length) continue;\n      const wd = new Date(day.d + \"T00:00:00\").getDay();\n      if (family !== \"medium\" || day.d !== today) {\n        addLine(stack, label(day.d, today), (wd === 0 || wd === 6) ? WEEKEND : MUTED, Font.boldSystemFont(11));\n        used++;\n      }\n      if (!day.items.length) { addLine(stack, \"今天沒有行程\", MUTED, Font.systemFont(12)); used++; continue; }\n      for (const it of day.items) {\n        if (used >= maxLines) break;\n        const row = stack.addStack(); row.centerAlignContent();\n        const dot = row.addText(\"● \"); dot.textColor = new Color(it.c); dot.font = Font.systemFont(9);\n        addLine(row, it.t, INK, Font.mediumSystemFont(13));\n        used++;\n      }\n      stack.addSpacer(3);\n    }\n  }\n  if (family === \"medium\") {\n    const h = w.addStack();\n    const left = h.addStack(); left.layoutVertically(); left.size = new Size(78, 0);\n    const wdText = left.addText(\"週\" + WD[now.getDay()]); wdText.textColor = WEEKEND; wdText.font = Font.boldSystemFont(13);\n    const big = left.addText(String(now.getDate())); big.textColor = INK; big.font = Font.boldSystemFont(40);\n    const mon = left.addText((now.getMonth() + 1) + \" 月\"); mon.textColor = MUTED; mon.font = Font.systemFont(12);\n    left.addSpacer();\n    h.addSpacer(8);\n    const right = h.addStack(); right.layoutVertically();\n    list(right, MAXL);\n    right.addSpacer();\n  } else {\n    const head = w.addStack(); head.centerAlignContent();\n    const t1 = head.addText((now.getMonth() + 1) + \"/\" + now.getDate() + \"（\" + WD[now.getDay()] + \"）\");\n    t1.textColor = INK; t1.font = Font.boldSystemFont(family === \"large\" ? 18 : 15);\n    head.addSpacer();\n    w.addSpacer(6);\n    list(w, MAXL);\n  }\n  w.addSpacer();\n}\nif (config.runsInApp) await w.presentMedium();\nScript.setWidget(w);\nScript.complete();\n";
+$("wgBtn").onclick=()=>{ $("calpop").hidden=true; if(typeof copyWidget==="function") copyWidget(); else showToast("登入後才能使用手機小工具"); };
 $("impFile").onchange=async ev=>{
   const f=ev.target.files[0]; ev.target.value=""; if(!f) return;
   let list=[];
