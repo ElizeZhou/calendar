@@ -4,96 +4,240 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>我的行事曆</title>
-<meta name="theme-color" content="#2f6f5e">
+<meta name="theme-color" content="#f0e6e6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="行事曆">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  /* 紅黑配色：黑底＋光澤紅（上方粉灰反光、中間深紅、下方亮紅）＋白色描邊 */
   :root{
-    --bg:#f6f4ef; --card:#ffffff; --ink:#1f2328; --muted:#7a7f87; --line:#e6e2d9;
-    --accent:#2f6f5e; --accent-soft:#e3efe9; --today:#d9682b; --sun:#c0473a; --sat:#3a6fb0;
-    --c1:#2f6f5e; --c2:#d9682b; --c3:#3a6fb0; --c4:#a2489b; --c5:#8a7a2a;
+    --bg:#f0e6e6; --card:#ffffff; --ink:#1d1a1b; --muted:#6f666a; --line:rgba(0,0,0,.16); --line2:rgba(0,0,0,.08);
+    --accent:#e0101e; --accent-soft:rgba(224,16,30,.14); --today:#5e0808; --sun:#ff4655; --sat:#ff4655;
+    --c1:#ffffff; --c2:#ff8a3d; --c3:#2ea7ff; --hol:#2ea7ff; --c4:#82037E; --c5:#014209; --c6:#ff3b3b; --c7:#FFE218; --c8:#FB6482;
     --radius:14px;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{ --bg:#16181b; --card:#1f2226; --ink:#eceae5; --muted:#9097a0; --line:#2e3238;
-      --accent:#5fb39b; --accent-soft:#233a33; --today:#f08a4b; --sun:#ef7b6e; --sat:#7aa7e3;
-      --c1:#5fb39b; --c2:#f08a4b; --c3:#7aa7e3; --c4:#d47fcd; --c5:#cdbb5a; }
+    --gloss:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.22) 46%,rgba(255,255,255,0) 52%,rgba(255,255,255,.08) 100%),#5e0808;
+    color-scheme:light;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .app{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 320px;gap:20px}
+  .app{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px}
   header{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   h1{font-size:26px;margin:0;font-weight:700;letter-spacing:.02em}
-  .nav{display:flex;gap:6px;margin-left:auto}
+  .tbox{position:relative}
+  .tbtn{font:inherit;border:none;background:none;padding:4px 8px;margin-left:-8px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;color:inherit}
+  .tbtn:hover{background:var(--card);border:none}
+  .caret{font-size:14px;color:var(--muted)}
+  .ympop{position:absolute;top:calc(100% + 6px);left:0;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;width:290px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+  .yrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .yrow span{font-size:18px;font-weight:700}
+  .yrow button{padding:6px 12px}
+  .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .mgrid button{padding:10px 0}
+  .mgrid button.now{border-color:var(--accent);color:var(--accent)}
+  .cbox{position:relative}
+  .calbtn{display:inline-flex;align-items:center;gap:6px;font-weight:500;max-width:240px}
+  #calName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .calpop{position:absolute;top:calc(100% + 6px);left:0;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;width:300px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+  .ctitle{font-size:12px;color:var(--muted);padding:2px 6px 6px}
+  .crow{display:flex;align-items:center;gap:2px;border-radius:10px}
+  .crow.on{background:var(--accent-soft)}
+  .crow .cname{flex:1;text-align:left;border:none;background:none;padding:9px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow.on .cname{font-weight:700;color:#5e0808}
+  .crow .ic{border:none;background:none;padding:6px 8px;color:var(--muted);flex:none}
+  .crow .ic:hover{color:var(--ink)}
+  .crow .ic.pen{font-size:24px;line-height:1;padding:2px 7px}
+  .crow .ic.danger{color:#fff;background:var(--sun);border-radius:8px;font-size:12px}
+  .cedit{display:flex;gap:4px;flex:1;padding:4px}
+  .cedit input{flex:1;min-width:0;padding:6px 8px}
+  .cedit button{padding:6px 10px;font-size:13px}
+  .caladd{display:flex;gap:6px;margin-top:8px;border-top:1px solid var(--line);padding-top:10px}
+  .caladd input{flex:1;min-width:0;padding:8px 10px}
+  .caladd button{padding:8px 12px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;
+    z-index:80;max-width:min(92vw,520px);box-shadow:0 8px 24px rgba(0,0,0,.25);word-break:break-all}
+  .csub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;white-space:normal;line-height:1.4}
+  .members{width:100%;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+  .cnote{font-size:11px;color:var(--muted);padding:8px 6px 0;line-height:1.5}
+  .nav{display:flex;gap:6px;margin-left:auto;align-items:center}
   button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px}
   button:hover{border-color:var(--accent)}
-  .primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+  .primary,.cell.today .num,.addc,.mgrid button.on,#loginBtn{background:var(--gloss);color:#fff;border:1.5px solid #fff;font-weight:700;
+    text-shadow:0 1px 1px rgba(0,0,0,.4);box-shadow:0 2px 10px rgba(94,8,8,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+  .primary:hover,#loginBtn:hover{filter:brightness(1.1);border-color:#fff}
+  .cal,aside,.calpop,.ympop,.modal,.members{border-color:var(--line)}
   .account{width:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .status{font-size:12px;color:var(--muted)}
   #who{font-size:12px;color:var(--ink);margin-left:auto}
-  #loginBtn{margin-left:auto;background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:500;padding:6px 12px;font-size:13px}
+  #loginBtn{margin-left:auto;padding:6px 12px;font-size:13px}
   #logoutBtn{padding:6px 12px;font-size:13px}
-  .cal{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-  .dow,.grid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .hint{font-size:12px;color:var(--muted);width:100%}
+  /* 白色背景＋黑色半透明卡片：卡片裡用淺色字和淺色格線 */
+  .cal,aside{--ink:#f7f4f4;--muted:#bdb4b7;--line:rgba(255,255,255,.22);--line2:rgba(255,255,255,.1);color:var(--ink);border-color:rgba(0,0,0,.6)!important}
+  .cal{background:#000;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.18);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  /* month */
+  .dow,.mrow{display:grid;grid-template-columns:repeat(7,1fr)}
+  .mrow{position:relative}
+  .track{position:relative}
+  .peek{position:absolute;top:0;width:100%;pointer-events:none}
+  .peek.next{left:100%} .peek.prev{right:100%}
   .dow div{padding:10px 0;text-align:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)}
-  .dow div:first-child{color:var(--sun)} .dow div:last-child{color:var(--sat)}
-  .cell{min-height:110px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;cursor:pointer;position:relative;overflow:hidden}
-  .cell:nth-child(7n){border-right:none}
+  .dow div:first-child,.dow div:last-child{color:var(--sun)}
+  .cell{min-height:118px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;cursor:pointer;position:relative;overflow:hidden}
+  .cell.last{border-right:none}
   .cell.other{opacity:.38}
-  .cell.sel{background:var(--accent-soft)}
+  .cell.sel{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+  .cell.drop{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+  .mbar{position:absolute;height:19px;line-height:19px;font-size:12px;padding:0 8px;border-radius:5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    cursor:grab;z-index:2;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+  .mbar.cl{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:calc(var(--bx) * -1);padding-left:12px}
+  .mbar.cr{border-top-right-radius:0;border-bottom-right-radius:0}
+  .mrow{--bx:4px}
+  .mbar .rh{position:absolute;right:0;top:0;bottom:0;width:9px;cursor:ew-resize;touch-action:none}
+  .mbar .rh::after{content:"";position:absolute;right:3px;top:5px;bottom:5px;width:2px;border-radius:1px;background:currentColor;opacity:.5}
+  .mbar.dragging{opacity:.85;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.6),0 0 0 1.5px var(--accent)}
+  body.mdrag .mbar{pointer-events:none}
+  body.mdrag,body.mdrag *{cursor:grabbing!important}
+  .addc{display:block;margin:2px 0 0;width:26px;height:26px;padding:0;border-radius:50%;
+    font-size:16px;line-height:23px;text-align:center;z-index:3;animation:pop .15s ease-out}
+  .addc:hover{filter:brightness(1.1)}
+  @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+  .mrow.hasadd .cell{min-height:146px}
+  .mbar.hol{--col:var(--hol);color:#fff;font-weight:700;cursor:default;pointer-events:none}
+  .holname{color:var(--hol);font-weight:700;font-size:14px;margin:-2px 0 10px}
   .num{font-size:13px;font-weight:500;display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:50%}
-  .cell.today .num{background:var(--today);color:#fff}
-  .ev{font-size:12px;line-height:1.3;padding:2px 6px;margin-top:3px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-  .more{font-size:11px;color:var(--muted);margin-top:2px}
+  .cell.today .num{color:#fff}
+  .ev{font-size:12px;line-height:1.3;padding:2px 6px;margin-top:3px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .ev:hover{filter:brightness(1.06);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+  .more{font-size:11px;color:var(--muted);position:absolute;left:8px;bottom:4px}
   .dots{display:none;gap:3px;justify-content:center;margin-top:2px}
-  .dot{width:6px;height:6px;border-radius:50%}
-  aside{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;align-self:start}
-  aside h2{margin:0 0 4px;font-size:18px}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
-  .item{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+  .dot{width:7px;height:7px;border-radius:50%}
+  /* 整月備忘 */
+  .memo{grid-column:1;background:#000;--ink:#f7f4f4;--muted:#bdb4b7;--line:rgba(255,255,255,.22);--line2:rgba(255,255,255,.1);color:var(--ink);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.6);border-radius:var(--radius);padding:16px 18px 18px}
+  .memohd{display:block;font-size:18px;font-weight:700;margin:0 0 10px;color:var(--ink)}
+  .memo textarea{width:100%;min-height:72px;background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--line2);border-radius:10px;
+    padding:10px 12px;font:inherit;font-size:16px;line-height:1.55;resize:none;overflow:hidden;box-sizing:border-box;display:block;margin:0}
+  .memo textarea:focus{outline:none;border-color:#f0e6e6;background:rgba(255,255,255,.09)}
+  /* side list */
+  aside{background:#000;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.18);border:1px solid var(--line);border-radius:var(--radius);padding:18px;align-self:start}
+  aside h2{margin:0 0 10px;font-size:18px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .sub:empty{display:none}
+  .item.lift{position:relative;z-index:5;background:#1a1a1a;box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 0 1.5px var(--accent);transition:none!important;cursor:grabbing}
+  .item.shift{transition:transform .15s ease}
+  .item{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative;overflow:hidden;border-radius:10px;cursor:pointer;border:1px solid transparent}
+  .icont{display:flex;gap:10px;padding:10px;background:transparent;position:relative;z-index:1;transition:transform .2s ease}
+  .item.swiping .icont,.item.open .icont{background:#000}
+  .item.swiping .icont{transition:none}
+  /* 手機左滑露出的刪除按鈕 */
+  .sdel{position:absolute;top:0;right:0;bottom:0;width:84px;border:none;border-radius:0;padding:0;color:#fff;font-weight:700;font-size:14px;
+    background:var(--gloss);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+  .sdel.sure{font-size:13px}
+  .sdel{visibility:hidden} .item.swiping .sdel,.item.open .sdel{visibility:visible}
   .item:hover{border-color:var(--line)}
   .bar{width:4px;border-radius:2px;flex:none}
   .item .t{font-size:12px;color:var(--muted)} .item .n{font-weight:500}
   .item .note{font-size:12px;color:var(--muted);margin-top:2px;white-space:pre-wrap}
+  .multi{font-size:11px;color:var(--muted);margin-top:2px}
   .empty{color:var(--muted);font-size:14px;padding:20px 0;text-align:center}
   /* modal */
-  .mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:60}
   .mask.open{display:flex}
-  .modal{background:var(--card);border-radius:18px;padding:22px;width:100%;max-width:420px}
+  .modal{background:var(--card);border-radius:18px;padding:22px;width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow-y:auto}
   .modal h3{margin:0 0 14px}
-  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  label,.lbl{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
   input,textarea{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
   textarea{min-height:70px;resize:vertical}
-  .row{display:flex;gap:10px} .row>div{flex:1}
-  .colors{display:flex;gap:10px;margin-top:4px}
-  .sw{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent}
-  .sw.on{border-color:var(--ink)}
+  input[type=date]{cursor:pointer}
+  .slot{display:grid;grid-template-columns:1fr 1fr 32px;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;align-items:end}
+  .slot>*{min-width:0}
+  .slot input{min-width:0;width:100%;box-sizing:border-box;padding:8px 10px}
+  .slot .rm{grid-column:3;grid-row:1;padding:0;width:32px;height:32px;border-radius:50%;color:var(--muted);font-size:16px;line-height:1;align-self:center}
+  .slot .tm span{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .addslot{width:100%;border-style:dashed;color:var(--accent);font-size:14px;padding:8px}
+  .colors{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+  .sw{width:28px;height:28px;border-radius:50%;cursor:pointer}
+  .sw.on{outline:2.5px solid var(--ink);outline-offset:2px}
   .actions{display:flex;gap:8px;margin-top:18px}
   .actions .del{color:var(--sun);margin-right:auto}
+  /* 玻璃亮面：清透的底色＋上半部亮面反光（中間有清楚的分界）＋白色亮邊 */
+  .jelly,.mbar.hol{
+    background-color:color-mix(in srgb,var(--col) 78%,transparent);
+    background-image:linear-gradient(180deg,rgba(255,255,255,.88) 0%,rgba(255,255,255,.45) 46%,rgba(255,255,255,.06) 50%,rgba(255,255,255,0) 72%,rgba(255,255,255,.28) 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.7),
+      inset 0 0 0 1.5px color-mix(in srgb,var(--col) 45%,transparent),
+      inset 0 -2px 3px color-mix(in srgb,var(--col) 35%,transparent),
+      0 2px 6px color-mix(in srgb,var(--col) 28%,transparent)}
+  .mbar.jelly,.mbar.hol{border-radius:8px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font-weight:500}
+  .mbar.hol{font-weight:700}
+  .w{color:#1f2328 !important}
+  .mbar.jelly.w:not(.wh){color:#1d1a1b !important;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+  /* 第一個顏色：不要白色底，只有白色字 */
+  .jelly.wh{background:none!important;box-shadow:none!important}
+  .mbar.jelly.dk{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+  .mbar.jelly.wh{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.6);font-weight:500}
+  .mbar.jelly.wh:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)!important}
+  .bar.jelly.wh{background:#fff!important}
+  .sw.wh{display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1.5px #7a6f73!important}
+  .dot.jelly,.bar.jelly{background-color:color-mix(in srgb,var(--col) 70%,transparent)}
+  .mbar.jelly:hover{filter:brightness(1.05) saturate(1.1)}
   .fab{display:none}
   /* phone */
   @media (max-width:760px){
     .app{grid-template-columns:1fr;padding:12px;gap:12px}
-    h1{font-size:21px}
-    header .primary{display:none}
-    .cell{min-height:54px;padding:4px 2px;text-align:center}
-    .ev,.more{display:none}
-    .dots{display:flex}
-    .fab{display:flex;position:fixed;right:18px;bottom:22px;width:56px;height:56px;border-radius:50%;font-size:28px;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);padding:0}
-    aside{padding:14px;margin-bottom:80px}
+    h1{font-size:20px}
+    .tbox{width:100%}
+    .nav{margin-left:0;width:100%}
+    .nav .sp{flex:1}
+    #addBtn{display:none}
+    .app{padding:10px}
+    .cell{min-height:96px;padding:3px 2px;text-align:center}
+    .mrow{--bx:1px}
+    .mbar{height:16px;line-height:16px;font-size:10.5px;padding:0 3px;border-radius:5px !important;letter-spacing:-.02em}
+    .mbar.cl{padding-left:4px}
+    .mbar.hasrh{padding-right:15px}
+    .mbar .rh{width:16px;background:rgba(0,0,0,.18)}
+    .mbar .rh::after{display:block;right:5px;top:3px;bottom:3px;width:5px;border-radius:2px;opacity:.9;
+      background:repeating-linear-gradient(90deg,currentColor 0 1.5px,transparent 1.5px 3.5px)}
+    .num{width:24px;height:24px;font-size:12px}
+    .more{left:0;right:0;text-align:center;bottom:2px;font-size:10px}
+    .addc{margin:1px auto 0;width:20px;height:20px;line-height:20px;font-size:13px}
+    .mrow.hasadd .cell{min-height:118px}
+    .cal{border-radius:12px}
+    .fab{display:flex;position:fixed;right:18px;bottom:22px;width:56px;height:56px;border-radius:50%;font-size:28px;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);padding:0;z-index:40}
+    aside{padding:14px}
+    .memo{padding:14px;margin-bottom:80px}
   }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1 id="title"></h1>
+    <div class="tbox">
+      <h1><button type="button" class="tbtn" id="titleBtn" aria-haspopup="true" aria-expanded="false" title="選擇年份和月份"><span id="title"></span><span class="caret">▾</span></button></h1>
+      <div class="ympop" id="ympop" hidden>
+        <div class="yrow"><button type="button" id="yPrev" aria-label="前一年">‹</button><span id="yLab"></span><button type="button" id="yNext" aria-label="後一年">›</button></div>
+        <div class="mgrid" id="mGrid"></div>
+      </div>
+    </div>
     <div class="nav">
-      <button id="prev" aria-label="上個月">‹</button>
+      <div class="cbox">
+        <button type="button" class="calbtn" id="calBtn" aria-haspopup="true" aria-expanded="false" title="切換或新增日曆"><span id="calName"></span><span class="caret">▾</span></button>
+        <div class="calpop" id="calpop" hidden>
+          <div class="ctitle">切換日曆</div>
+          <div id="calList"></div>
+          <div class="cnote">🔗 第一本以外的日曆可以複製連結，邀請別人一起編輯</div>
+          <form id="calAdd" class="caladd"><input id="calNew" maxlength="20" placeholder="請輸入日曆名稱" aria-label="新日曆名稱"><button type="submit" class="primary">新增</button></form>
+        </div>
+      </div>
+      <span class="sp"></span>
+      <button id="prev" aria-label="上一頁">‹</button>
       <button id="todayBtn">今天</button>
-      <button id="next" aria-label="下個月">›</button>
+      <button id="next" aria-label="下一頁">›</button>
       <button class="primary" id="addBtn">＋ 新增行程</button>
     </div>
     <div class="account">
@@ -102,33 +246,42 @@
       <button id="loginBtn" style="display:none">用 Google 登入同步</button>
       <button id="logoutBtn" style="display:none">登出</button>
     </div>
+    <div class="members" id="members" hidden></div>
   </header>
 
   <div class="cal">
-    <div class="dow"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
-    <div class="grid" id="grid"></div>
+    <div id="monthView">
+      <div class="dow"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+      <div class="track" id="track"><div class="grid" id="grid"></div></div>
+    </div>
   </div>
 
   <aside>
     <h2 id="dayTitle"></h2>
+    <div class="holname" id="dayHol" hidden></div>
     <div class="sub" id="daySub"></div>
     <div id="list"></div>
   </aside>
+
+  <section class="memo">
+    <label class="memohd" for="memo" id="memoTitle"></label>
+    <textarea id="memo" maxlength="3000" rows="3"></textarea>
+  </section>
 </div>
 
 <button class="primary fab" id="fab" aria-label="新增行程">＋</button>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <div class="mask" id="mask">
   <form class="modal" id="form">
     <h3 id="formTitle">新增行程</h3>
     <label for="fTitle">標題</label>
-    <input id="fTitle" required maxlength="80" placeholder="例如：牙醫看診">
-    <div class="row">
-      <div><label for="fDate">日期</label><input type="date" id="fDate" required></div>
-      <div><label for="fTime">時間（可留空）</label><input type="time" id="fTime"></div>
-    </div>
+    <input id="fTitle" required maxlength="80">
+    <span class="lbl">日期</span>
+    <div id="slots"></div>
+    <button type="button" class="addslot" id="addSlot">＋ 新增日期</button>
     <label for="fNote">備註</label>
-    <textarea id="fNote" maxlength="500" placeholder="地點、要帶的東西…"></textarea>
+    <textarea id="fNote" maxlength="500"></textarea>
     <label>顏色</label>
     <div class="colors" id="colors"></div>
     <div class="actions">
@@ -143,7 +296,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut }
   from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch }
+import { initializeFirestore, persistentLocalCache, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, query, where, arrayUnion, arrayRemove, deleteField }
   from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -160,65 +313,208 @@ let fdb;
 try { fdb = initializeFirestore(fbApp, { localCache: persistentLocalCache() }); }
 catch (e) { fdb = initializeFirestore(fbApp, {}); }
 
-const COLORS=["c1","c2","c3","c4","c5"];
+const COLORS=["c1","c2","c4","c5","c6","c7","c8"]; // 藍色（c3）保留給國定假日，不能選
+const LIGHT=new Set(["c7"]); // 淺色：用黑字（第一個顏色 c1＝沒有底色、只有白字）
 const pad=n=>String(n).padStart(2,"0");
 const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
 const WEEK=["日","一","二","三","四","五","六"];
 const $=id=>document.getElementById(id);
+const isPhone=()=>matchMedia("(max-width:760px)").matches;
 
 let view=new Date(); view.setDate(1);
 let selected=ymd(new Date());
-let events={};          // id -> {title,date,time,note,color}
+const SEL=()=>selected, setSel=k=>{selected=k};
+let events={};          // id -> {title,note,color,slots:[{date,endDate}],date}
 let editingId=null, pickColor="c1";
 let store=null;         // cloud collection or null
+let memos={};           // 整月備忘："日曆id|YYYY-MM" -> 文字
+const MEMO_KEY="my-calendar-memos";
+// 多個日曆：每個行程有 cal（日曆 id），沒有 cal 的舊行程屬於「我的日曆」
+const DEFAULT_CAL={id:"main",name:"我的日曆"};
+const CAL_KEY="my-calendar-cals";
+let cals=[{...DEFAULT_CAL}];
+let curCal="main"; try{curCal=localStorage.getItem("cal-current")||"main"}catch(e){}
+const calOf=e=>e.cal||"main";
+function setCals(list){ // 日曆清單更新時，盡量停在上次看的那本
+  cals=list; let want=null; try{want=localStorage.getItem("cal-current")}catch(e){}
+  if(want&&cals.some(c=>c.id===want)) curCal=want; else if(!cals.some(c=>c.id===curCal)) curCal=cals[0].id;
+}
+function loadLocalCals(){let l=null;try{l=JSON.parse(localStorage.getItem(CAL_KEY)||"null")}catch(e){} setCals(Array.isArray(l)&&l.length?l:[{...DEFAULT_CAL}])}
+function saveLocalCals(){try{localStorage.setItem(CAL_KEY,JSON.stringify(cals))}catch(e){}}
+const curName=()=>(cals.find(c=>c.id===curCal)||cals[0]).name;
+let myUid=null, myName=null;   // 登入後的使用者 id 和名字
+// 共用日曆的成員名字
+const memberNames=c=>(c.members||[]).map(u=>{const n=(c.names||{})[u]||(u===myUid?myName:"")||"成員";return u===myUid?n+"（你）":n});
+// 用邀請連結打開時：網址最後是 #join=日曆id
+let pendingJoin=null;
+{const mj=location.hash.match(/^#join=([a-z0-9]{10,40})$/);
+ if(mj){pendingJoin=mj[1];try{sessionStorage.setItem("cal-join",mj[1])}catch(e){}}
+ else{try{pendingJoin=sessionStorage.getItem("cal-join")}catch(e){}}}
+// 隨機 id（共用日曆的 id 也是邀請碼，所以要夠亂）
+const rid=()=>{const a=new Uint8Array(16);crypto.getRandomValues(a);return [...a].map(b=>"abcdefghijklmnopqrstuvwxyz0123456789"[b%36]).join("")};
+let toastTimer=null;
+function showToast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},4000)}
+async function copyText(text,okMsg){
+  try{await navigator.clipboard.writeText(text);showToast(okMsg);return}catch(e){}
+  try{const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();
+    const ok=document.execCommand("copy");ta.remove();if(ok){showToast(okMsg);return}}catch(e){}
+  showToast("無法自動複製，請手動複製這個連結："+text);
+}
 
 /* ---------- storage: cloud (syncs phone + computer) with local fallback ---------- */
 const LS_KEY="my-calendar-events";
 function loadLocal(){try{events=JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch(e){events={}}}
 function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(events))}catch(e){}}
 function setStatus(t){$("status").textContent=t}
+function loadLocalMemos(){try{memos=JSON.parse(localStorage.getItem(MEMO_KEY)||"{}")}catch(e){memos={}}}
+function saveLocalMemos(){try{localStorage.setItem(MEMO_KEY,JSON.stringify(memos))}catch(e){}}
 
 // 沒登入：資料存在這台裝置。登入後：資料存在 Firebase，電腦和手機同步。
-let unsub=null;
+// 第一本日曆存在 users/{uid}/events，只有自己看得到；
+// 其他日曆存在 calendars/{id}，可以複製連結邀請別人一起編輯。
+let nameFixed=new Set(), unsubs=[], calUnsubs={}, personal={}, shared={}, settingsRef=null, sharedMeta=[], mainName=DEFAULT_CAL.name;
+function stopAll(){unsubs.forEach(u=>u());unsubs=[];Object.values(calUnsubs).forEach(u=>u());calUnsubs={};personal={};shared={};sharedMeta=[];mainName=DEFAULT_CAL.name;memos={}}
+const memoRef=k=>{const [cal,ym]=k.split("|"); return cal==="main"?doc(fdb,"users",myUid,"memos",ym):doc(fdb,"calendars",cal,"memos",ym)};
+function setMemos(cal,snap){for(const k of Object.keys(memos)) if(k.startsWith(cal+"|")) delete memos[k]; snap.forEach(d=>{memos[cal+"|"+d.id]=d.data().text||""}); renderMemo()}
+function rebuild(){
+  const all={};
+  for(const [id,e] of Object.entries(personal)) all[id]={...e,cal:"main"};
+  for(const [cid,evs] of Object.entries(shared)) for(const [id,e] of Object.entries(evs)) all[id]={...e,cal:cid};
+  events=all;
+  setCals([{id:"main",name:mainName},...sharedMeta]); render();
+}
 function initStore(){
-  loadLocal(); render();
+  loadLocal(); loadLocalCals(); loadLocalMemos(); render();
   onAuthStateChanged(auth, async user=>{
-    if(unsub){unsub();unsub=null}
+    stopAll();
     if(!user){
-      store=null; loadLocal(); render();
+      myUid=null; myName=null; store=null; settingsRef=null; loadLocal(); loadLocalCals(); loadLocalMemos(); render();
       $("who").textContent=""; $("loginBtn").style.display=""; $("logoutBtn").style.display="none";
-      setStatus("尚未登入：資料只存在這台裝置");
+      setStatus(pendingJoin?"👋 要加入朋友分享的日曆，請先按右邊的「用 Google 登入同步」":"尚未登入：資料只存在這台裝置");
       return;
     }
+    myUid=user.uid; myName=user.displayName||(user.email||"").split("@")[0]||"使用者";
     $("who").textContent=user.displayName||user.email||"";
     $("loginBtn").style.display="none"; $("logoutBtn").style.display="";
     store=collection(fdb,"users",user.uid,"events");
+    settingsRef=doc(fdb,"users",user.uid,"meta","settings");   // 第一本日曆的名稱
     setStatus("同步中…");
     await migrateLocal();
+    if(pendingJoin) await joinCal(pendingJoin);
+    unsubs.push(onSnapshot(collection(fdb,"users",user.uid,"memos"),s=>setMemos("main",s),err=>console.error(err)));
+    unsubs.push(onSnapshot(settingsRef,s=>{mainName=(s.exists()&&s.data().mainName)||DEFAULT_CAL.name;rebuild()},err=>console.error(err)));
     const timer=setTimeout(()=>setStatus("暫時連不上雲端，顯示的可能不是最新資料"),10000);
-    unsub=onSnapshot(store,{includeMetadataChanges:true},snap=>{
-      const next={}; snap.forEach(d=>{next[d.id]=d.data()});
-      events=next; render();
+    unsubs.push(onSnapshot(store,{includeMetadataChanges:true},snap=>{
+      personal={}; snap.forEach(d=>{personal[d.id]=d.data()}); rebuild();
       if(!snap.metadata.fromCache){clearTimeout(timer);setStatus("☁️ 已同步")}
-    },err=>{clearTimeout(timer);console.error(err);setStatus("同步失敗："+(err.code||err.message))});
+    },err=>{clearTimeout(timer);console.error(err);setStatus("同步失敗："+(err.code||err.message))}));
+    // 我參與的共用日曆（自己建立的＋別人邀請的）
+    unsubs.push(onSnapshot(query(collection(fdb,"calendars"),where("members","array-contains",user.uid)),snap=>{
+      const list=[], ids=new Set();
+      snap.forEach(d=>{const x=d.data(); ids.add(d.id); list.push({id:d.id,name:x.name||"未命名日曆",owner:x.owner,members:x.members||[],names:x.names||{},created:x.created||0,shared:true});
+        // 讓其他成員看得到我的名字（名字沒寫過或改過時才更新）
+        if((x.names||{})[user.uid]!==myName&&!nameFixed.has(d.id)){nameFixed.add(d.id);updateDoc(doc(fdb,"calendars",d.id),{["names."+user.uid]:myName}).catch(e=>console.error(e))}
+      });
+      sharedMeta=list.sort((a,b)=>a.created-b.created);
+      for(const id of Object.keys(calUnsubs)) if(!ids.has(id)){calUnsubs[id]();delete calUnsubs[id];delete shared[id]}
+      ids.forEach(id=>{
+        if(calUnsubs[id]) return;
+        const u1=onSnapshot(collection(fdb,"calendars",id,"events"),s=>{const m={};s.forEach(d=>{m[d.id]=d.data()});shared[id]=m;rebuild()},err=>console.error(err));
+        const u2=onSnapshot(collection(fdb,"calendars",id,"memos"),s=>setMemos(id,s),err=>console.error(err));
+        calUnsubs[id]=()=>{u1();u2()};
+      });
+      rebuild();
+    },err=>{console.error(err);setStatus("讀取共用日曆失敗："+(err.code||err.message)+"（請確認 Firebase 規則已更新）")}));
   });
 }
-// 第一次登入時，把這台裝置原本存的行程搬到雲端
+// 用邀請連結加入別人的日曆
+async function joinCal(id){
+  try{
+    await updateDoc(doc(fdb,"calendars",id),{members:arrayUnion(myUid),["names."+myUid]:myName});
+    curCal=id; try{localStorage.setItem("cal-current",id)}catch(e){}
+    showToast("已加入共用日曆 🎉");
+  }catch(e){console.error(e); showToast("無法加入這個日曆：連結可能已失效，或日曆已被刪除")}
+  pendingJoin=null; try{sessionStorage.removeItem("cal-join")}catch(e){}
+  try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
+}
+// 第一次登入時，把這台裝置原本存的行程和日曆搬到雲端
 async function migrateLocal(){
   let local={}; try{local=JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch(e){}
-  const ids=Object.keys(local); if(!ids.length) return;
+  let lc=null; try{lc=JSON.parse(localStorage.getItem(CAL_KEY)||"null")}catch(e){}
+  let lm={}; try{lm=JSON.parse(localStorage.getItem(MEMO_KEY)||"{}")}catch(e){}
+  const ids=Object.keys(local), mks=Object.keys(lm).filter(k=>lm[k]);
+  if(!ids.length&&!Array.isArray(lc)&&!mks.length) return;
   try{
-    const b=writeBatch(fdb); ids.forEach(id=>b.set(doc(store,id),local[id])); await b.commit();
-    localStorage.removeItem(LS_KEY);
+    const cloudCals=new Set();
+    if(Array.isArray(lc)) for(const c of lc){
+      if(c.id==="main"){ if(c.name&&c.name!==DEFAULT_CAL.name) await setDoc(settingsRef,{mainName:c.name},{merge:true}); continue; }
+      await setDoc(doc(fdb,"calendars",c.id),{name:c.name,owner:myUid,members:[myUid],names:{[myUid]:myName},created:Date.now()}); cloudCals.add(c.id);
+    }
+    for(let i=0;i<ids.length;i+=400){
+      const b=writeBatch(fdb);
+      ids.slice(i,i+400).forEach(id=>{const {cal,...e}=local[id]; b.set(cloudCals.has(cal)?doc(fdb,"calendars",cal,"events",id):doc(store,id),e)});
+      await b.commit();
+    }
+    for(const k of mks){const cal=k.split("|")[0]; if(cal==="main"||cloudCals.has(cal)) await setDoc(memoRef(k),{text:lm[k],updated:Date.now()})}
+    localStorage.removeItem(LS_KEY); localStorage.removeItem(CAL_KEY); localStorage.removeItem(MEMO_KEY);
   }catch(e){console.error(e)}
 }
+const evRef=(id,cal)=>cal&&cal!=="main"?doc(fdb,"calendars",cal,"events",id):doc(store,id);
 async function saveEvent(id,data){
-  if(store){ try{await setDoc(doc(store,id),data)}catch(e){setStatus("儲存失敗："+(e.code||e.message))} return; }
+  if(store){ const {cal,...d}=data; try{await setDoc(evRef(id,cal),d)}catch(e){setStatus("儲存失敗："+(e.code||e.message))} return; }
   events[id]=data; saveLocal(); render();
 }
 async function deleteEvent(id){
-  if(store){ try{await deleteDoc(doc(store,id))}catch(e){setStatus("刪除失敗："+(e.code||e.message))} return; }
+  if(store){ try{await deleteDoc(evRef(id,events[id]?.cal))}catch(e){setStatus("刪除失敗："+(e.code||e.message))} return; }
   delete events[id]; saveLocal(); render();
+}
+async function saveMemo(k,text){
+  if(store){ try{ text.trim()?await setDoc(memoRef(k),{text,updated:Date.now()}):await deleteDoc(memoRef(k)) }catch(e){setStatus("備忘儲存失敗："+(e.code||e.message)+"（請確認 Firebase 規則已更新）")} return; }
+  if(text.trim()) memos[k]=text; else delete memos[k]; saveLocalMemos();
+}
+async function addCal(name){
+  const id=rid(); curCal=id; try{localStorage.setItem("cal-current",id)}catch(e){}
+  if(store){
+    const data={name,owner:myUid,members:[myUid],names:{[myUid]:myName},created:Date.now()};
+    sharedMeta=[...sharedMeta,{id,...data,shared:true}]; rebuild();
+    try{await setDoc(doc(fdb,"calendars",id),data)}catch(e){setStatus("新增日曆失敗："+(e.code||e.message)+"（請確認 Firebase 規則已更新）")}
+    return;
+  }
+  setCals([...cals,{id,name}]); saveLocalCals(); render();
+}
+async function renameCal(id,name){
+  if(store){
+    try{
+      if(id==="main"){mainName=name;rebuild();await setDoc(settingsRef,{mainName:name},{merge:true})}
+      else await updateDoc(doc(fdb,"calendars",id),{name});
+    }catch(e){setStatus("改名失敗："+(e.code||e.message))}
+    return;
+  }
+  setCals(cals.map(c=>c.id===id?{...c,name}:c)); saveLocalCals(); render();
+}
+// 自己建立的日曆：刪除（連同行程）；別人分享的：離開
+async function removeCal(id){
+  if(id==="main") return;
+  if(store){
+    const c=cals.find(x=>x.id===id); if(!c) return;
+    try{
+      if(c.owner===myUid){
+        const ids=Object.keys(shared[id]||{});
+        for(let i=0;i<ids.length;i+=400){const b=writeBatch(fdb); ids.slice(i,i+400).forEach(eid=>b.delete(doc(fdb,"calendars",id,"events",eid))); await b.commit()}
+        for(const k of Object.keys(memos).filter(k=>k.startsWith(id+"|"))) await deleteDoc(memoRef(k));
+        await deleteDoc(doc(fdb,"calendars",id));
+      }else await updateDoc(doc(fdb,"calendars",id),{members:arrayRemove(myUid),["names."+myUid]:deleteField()});
+    }catch(e){setStatus("操作失敗："+(e.code||e.message))}
+    return;
+  }
+  Object.entries(events).filter(([,e])=>calOf(e)===id).forEach(([i])=>delete events[i]); saveLocal();
+  Object.keys(memos).filter(k=>k.startsWith(id+"|")).forEach(k=>delete memos[k]); saveLocalMemos();
+  setCals(cals.filter(c=>c.id!==id)); saveLocalCals(); render();
+}
+function shareCal(id){
+  if(!store){ showToast("要共用日曆，請先按「用 Google 登入同步」"); return; }
+  copyText(location.origin+location.pathname+"#join="+id,"已複製邀請連結！傳給對方，對方打開並登入後就能一起編輯");
 }
 $("loginBtn").onclick=async()=>{
   const p=new GoogleAuthProvider();
@@ -231,98 +527,493 @@ $("loginBtn").onclick=async()=>{
 };
 $("logoutBtn").onclick=()=>signOut(auth);
 
-/* ---------- rendering ---------- */
-function byDate(){
+
+/* ---------- data helpers ---------- */
+// 一個行程可以有多組日期：slots=[{date(開始日期),endDate(結束日期，可空)},...]
+function slotsOf(e){
+  const sl=(Array.isArray(e.slots)&&e.slots.length)?e.slots:[{date:e.date}];
+  return sl.map(x=>({date:x.date,endDate:(x.endDate&&x.endDate>x.date)?x.endDate:""}));
+}
+function sortSlots(sl){return sl.sort((a,b)=>(a.date+a.endDate).localeCompare(b.date+b.endDate))}
+const addDays=(k,n)=>{const d=parse(k);d.setDate(d.getDate()+n);return ymd(d)};
+const diffDays=(a,b)=>Math.round((Date.UTC(...b.split("-").map((v,i)=>i===1?v-1:+v))-Date.UTC(...a.split("-").map((v,i)=>i===1?v-1:+v)))/864e5);
+const md=k=>{const d=parse(k);return (d.getMonth()+1)+"/"+d.getDate()};
+function ranges(){ // 每個時間點＝一段日期
+  const out=[];
+  for(const [id,e] of Object.entries(events)){
+    if(calOf(e)!==curCal) continue;   // 只顯示目前這本日曆
+    const sl=slotsOf(e);
+    sl.forEach((x,si)=>out.push({id,si,order:e.order,title:e.title,note:e.note,color:e.color||"c1",ds:x.date,de:x.endDate||x.date,n:sl.length}));
+  }
+  return out;
+}
+function byDate(){ // 展開成每一天
   const m={};
-  for(const [id,e] of Object.entries(events)){(m[e.date]=m[e.date]||[]).push({id,...e})}
-  for(const k in m) m[k].sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+  ranges().forEach(r=>{
+    const len=Math.min(diffDays(r.ds,r.de),366);
+    for(let i=0;i<=len;i++){const k=addDays(r.ds,i);(m[k]=m[k]||[]).push({...r,date:k})}
+  });
+  for(const k in m) m[k].sort((a,b)=>ordOf(a)-ordOf(b)||a.ds.localeCompare(b.ds)||a.title.localeCompare(b.title));
   return m;
 }
+const ordOf=e=>e.order==null?1e15:e.order;  // 同一天的排列順序（拖曳調整）
+function timeText(e){return e.de!==e.ds?md(e.ds)+" – "+md(e.de):""}
+async function updateSlot(id,si,patch){
+  const e=events[id]; if(!e) return;
+  const slots=slotsOf(e); slots[si]={...slots[si],...patch};
+  slots.forEach(x=>{if(!x.endDate||x.endDate<=x.date)x.endDate=""});
+  sortSlots(slots);
+  await saveEvent(id,{title:e.title,note:e.note||"",color:e.color||"c1",cal:calOf(e),slots,date:slots[0].date,...(e.order!=null?{order:e.order}:{})});
+}
+const colorOf=(el,c)=>{el.style.setProperty("--col","var(--"+c+")"); el.classList.add("jelly"); if(LIGHT.has(c)) el.classList.add("w"); if(c==="c1") el.classList.add("wh"); if(c==="c5") el.classList.add("dk")};
+
+/* ---------- rendering ---------- */
 function render(){
-  const map=byDate(), today=ymd(new Date());
+  const map=byDate();
+  $("calName").textContent=curName();
+  const cc=cals.find(c=>c.id===curCal);  // 目前這本是共用日曆 → 顯示成員名字
+  const mem=cc&&(cc.members||[]).length>1;
+  $("members").hidden=!mem; if(mem) $("members").textContent="👥 「"+cc.name+"」共用成員："+memberNames(cc).join("、");
+  if(!$("calpop").hidden&&calEdit===null) drawCals();
+  renderMonth(map); renderDay(map); renderMemo();
+}
+// 台灣國定假日（行政院人事行政總處公布的政府行政機關辦公日曆表；s～e 為連續放假期間，含週末與補假）
+const HOLIDAYS=[
+  {name:"元旦",s:"2026-01-01",e:"2026-01-01"},
+  {name:"春節連假",s:"2026-02-14",e:"2026-02-22"},
+  {name:"和平紀念日連假",s:"2026-02-27",e:"2026-03-01"},
+  {name:"兒童節及清明節連假",s:"2026-04-03",e:"2026-04-06"},
+  {name:"勞動節連假",s:"2026-05-01",e:"2026-05-03"},
+  {name:"端午節連假",s:"2026-06-19",e:"2026-06-21"},
+  {name:"中秋節及教師節連假",s:"2026-09-25",e:"2026-09-28"},
+  {name:"國慶日連假",s:"2026-10-09",e:"2026-10-11"},
+  {name:"光復節連假",s:"2026-10-24",e:"2026-10-26"},
+  {name:"行憲紀念日連假",s:"2026-12-25",e:"2026-12-27"},
+  {name:"元旦連假",s:"2027-01-01",e:"2027-01-03"},
+  {name:"春節連假",s:"2027-02-04",e:"2027-02-10"},
+  {name:"和平紀念日連假",s:"2027-02-27",e:"2027-03-01"},
+  {name:"兒童節及清明節連假",s:"2027-04-03",e:"2027-04-06"},
+  {name:"勞動節連假",s:"2027-04-30",e:"2027-05-02"},
+  {name:"端午節",s:"2027-06-09",e:"2027-06-09"},
+  {name:"中秋節",s:"2027-09-15",e:"2027-09-15"},
+  {name:"教師節",s:"2027-09-28",e:"2027-09-28"},
+  {name:"國慶日連假",s:"2027-10-09",e:"2027-10-11"},
+  {name:"光復節連假",s:"2027-10-23",e:"2027-10-25"},
+  {name:"行憲紀念日連假",s:"2027-12-24",e:"2027-12-26"},
+  {name:"元旦連假",s:"2027-12-31",e:"2028-01-02"}
+];
+const holidayOf=k=>HOLIDAYS.find(h=>k>=h.s&&k<=h.e);
+const MAXLANE=3;
+function renderMonth(map){
   $("title").textContent=view.getFullYear()+" 年 "+(view.getMonth()+1)+" 月";
-  const start=new Date(view); start.setDate(1-view.getDay());
-  const grid=$("grid"); grid.innerHTML="";
-  for(let i=0;i<42;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i);
-    const key=ymd(d), list=map[key]||[];
-    const cell=document.createElement("div");
-    cell.className="cell"+(d.getMonth()!==view.getMonth()?" other":"")+(key===today?" today":"")+(key===selected?" sel":"");
-    const num=document.createElement("span"); num.className="num"; num.textContent=d.getDate();
-    if(d.getDay()===0&&key!==today) num.style.color="var(--sun)";
-    if(d.getDay()===6&&key!==today) num.style.color="var(--sat)";
-    cell.appendChild(num);
-    list.slice(0,3).forEach(e=>{const el=document.createElement("div");el.className="ev";el.style.background="var(--"+(e.color||"c1")+")";el.textContent=(e.time?e.time+" ":"")+e.title;cell.appendChild(el)});
-    if(list.length>3){const m=document.createElement("div");m.className="more";m.textContent="還有 "+(list.length-3)+" 項";cell.appendChild(m)}
-    const dots=document.createElement("div"); dots.className="dots";
-    list.slice(0,4).forEach(e=>{const s=document.createElement("span");s.className="dot";s.style.background="var(--"+(e.color||"c1")+")";dots.appendChild(s)});
-    cell.appendChild(dots);
-    cell.onclick=()=>{selected=key; if(d.getMonth()!==view.getMonth()){view=new Date(d.getFullYear(),d.getMonth(),1)} render()};
-    cell.ondblclick=()=>openForm(null,key);
-    grid.appendChild(cell);
+  fillMonth($("grid"),view,map,true);
+}
+// 畫出某個月的格子；live=false 是滑動時旁邊露出來的上／下個月
+function fillMonth(grid,v,map,live){
+  const today=ymd(new Date()), selected=live?SEL():"";
+  const first=new Date(v); first.setDate(1-v.getDay());
+  grid.innerHTML="";
+  const all=ranges();
+  for(let w=0;w<6;w++){
+    const ws=new Date(first); ws.setDate(first.getDate()+w*7);
+    const wsK=ymd(ws), weK=addDays(wsK,6);
+    const hasSel=selected>=wsK&&selected<=weK;
+    const row=document.createElement("div"); row.className="mrow"+(hasSel?" hasadd":""); row.dataset.start=wsK;
+    const ph=isPhone(), LANEH=ph?18:22;
+    const top=ph?(hasSel?54:32):(hasSel?62:34); // 有「＋」的那一週，長條往下移，讓出位置
+    // 這一週裡的長條，分配到不同的「列」避免重疊
+    const hols=HOLIDAYS.filter(h=>h.s<=weK&&h.e>=wsK).map(h=>({hol:true,title:h.name,ds:h.s,de:h.e}));
+    const segs=[...hols,...all.filter(r=>r.ds<=weK&&r.de>=wsK)].map(r=>({...r,
+      c0:Math.max(0,diffDays(wsK,r.ds)), c1:Math.min(6,diffDays(wsK,r.de)), contL:r.ds<wsK, contR:r.de>weK}));
+    segs.sort((a,b)=>(b.hol?1:0)-(a.hol?1:0)||ordOf(a)-ordOf(b)||a.c0-b.c0||(b.c1-b.c0)-(a.c1-a.c0)||a.title.localeCompare(b.title));
+    const lanes=[]; const hidden=Array(7).fill(0);
+    segs.forEach(s=>{let l=lanes.findIndex(end=>end<s.c0); if(l<0){l=lanes.length;lanes.push(s.c1)}else lanes[l]=s.c1; s.lane=l;
+      if(l>=MAXLANE) for(let c=s.c0;c<=s.c1;c++) hidden[c]++});
+    for(let i=0;i<7;i++){
+      const d=new Date(ws); d.setDate(ws.getDate()+i);
+      const key=ymd(d), list=map[key]||[];
+      const cell=document.createElement("div"); cell.dataset.date=key;
+      cell.className="cell"+(i===6?" last":"")+(d.getMonth()!==v.getMonth()?" other":"")+(key===today?" today":"")+(key===selected?" sel":"")+(holidayOf(key)?" holi":"");
+      const num=document.createElement("span"); num.className="num"; num.textContent=d.getDate();
+      if(d.getDay()===0&&key!==today) num.style.color="var(--sun)";
+      if(d.getDay()===6&&key!==today) num.style.color="var(--sun)";
+      if(d.getDay()%6!==0&&key!==today&&holidayOf(key)) num.style.color="var(--hol)";
+      cell.appendChild(num);
+      if(key===selected){ // 點選的日期出現「＋」，按下去新增這天的行程
+        const add=document.createElement("button"); add.type="button"; add.className="addc"; add.textContent="＋";
+        add.setAttribute("aria-label",(d.getMonth()+1)+" 月 "+d.getDate()+" 日新增行程"); add.title="新增這天的行程";
+        add.onclick=ev=>{ev.stopPropagation();openForm(null,key)}; add.ondblclick=ev=>ev.stopPropagation();
+        cell.appendChild(add);
+      }
+      if(hidden[i]){const m=document.createElement("div");m.className="more";m.textContent=isPhone()?"+"+hidden[i]:"還有 "+hidden[i]+" 項";cell.appendChild(m)}
+      const dots=document.createElement("div"); dots.className="dots";
+      list.slice(0,4).forEach(e=>{const s=document.createElement("span");s.className="dot";colorOf(s,e.color);dots.appendChild(s)});
+      cell.appendChild(dots);
+      cell.onclick=()=>{setSel(key); if(d.getMonth()!==view.getMonth()){view=new Date(d.getFullYear(),d.getMonth(),1)} render()};
+      cell.ondblclick=()=>openForm(null,key);
+      row.appendChild(cell);
+    }
+    segs.filter(s=>s.lane<MAXLANE).forEach(s=>row.appendChild(bar(s,row,top,LANEH)));
+    grid.appendChild(row);
   }
-  renderDay(map);
+}
+function bar(s,row,top,LANEH){
+  const el=document.createElement("div"); el.className="mbar"+(s.contL?" cl":"")+(s.contR?" cr":"");
+  el.style.left="calc("+(s.c0*100/7)+"% + var(--bx))"; el.style.width="calc("+((s.c1-s.c0+1)*100/7)+"% - var(--bx) * 2)";
+  el.style.top=(top+s.lane*LANEH)+"px";
+  const tx=document.createElement("span"); tx.textContent=s.title; el.appendChild(tx);
+  if(s.hol){ el.classList.add("hol"); el.title=s.title+"（"+md(s.ds)+(s.de!==s.ds?" – "+md(s.de):"")+"）"; return el; } // 國定假日：只顯示，不能拖曳
+  colorOf(el,s.color);
+  el.title=s.title+(timeText(s)?"（"+timeText(s)+"）":"");
+  if(!s.contR){const h=document.createElement("div");h.className="rh";h.title="拖曳調整結束日期";el.appendChild(h);el.classList.add("hasrh")}
+  el.onpointerdown=ev=>barDown(ev,s,el,row,ev.target.classList.contains("rh")?"resize":"move");
+  el.onclick=ev=>ev.stopPropagation(); el.ondblclick=ev=>ev.stopPropagation();
+  return el;
 }
 function renderDay(map){
-  const [y,m,d]=selected.split("-").map(Number); const dt=new Date(y,m-1,d);
-  $("dayTitle").textContent=m+" 月 "+d+" 日（"+WEEK[dt.getDay()]+"）";
+  const dt=parse(selected);
+  $("dayTitle").textContent=(dt.getMonth()+1)+" 月 "+dt.getDate()+" 日（"+WEEK[dt.getDay()]+"）";
   const list=map[selected]||[];
-  $("daySub").textContent=list.length?("共 "+list.length+" 個行程"):"";
+  $("daySub").textContent="";
+  const h=holidayOf(selected);
+  $("dayHol").hidden=!h; $("dayHol").textContent=h?"🎌 "+h.name+"（"+md(h.s)+(h.e!==h.s?" – "+md(h.e):"")+"）":"";
   const box=$("list"); box.innerHTML="";
   if(!list.length){box.innerHTML='<div class="empty">這天還沒有行程<br>點「＋」新增一個吧</div>';return}
   list.forEach(e=>{
     const it=document.createElement("div"); it.className="item";
-    const bar=document.createElement("div"); bar.className="bar"; bar.style.background="var(--"+(e.color||"c1")+")";
+    const bar=document.createElement("div"); bar.className="bar"; colorOf(bar,e.color);
     const body=document.createElement("div");
-    const t=document.createElement("div"); t.className="t"; t.textContent=e.time||"整天";
     const n=document.createElement("div"); n.className="n"; n.textContent=e.title;
-    body.append(t,n);
+    if(timeText(e)){const t=document.createElement("div"); t.className="t"; t.textContent=timeText(e); body.append(t)}
+    body.append(n);
     if(e.note){const no=document.createElement("div");no.className="note";no.textContent=e.note;body.appendChild(no)}
-    it.append(bar,body); it.onclick=()=>openForm(e.id); box.appendChild(it);
+    const ic=document.createElement("div"); ic.className="icont"; ic.append(bar,body);
+    const del=document.createElement("button"); del.type="button"; del.className="sdel"; del.textContent="刪除";
+    del.onpointerdown=ev=>ev.stopPropagation();
+    del.onclick=async ev=>{ev.stopPropagation();
+      if(!del.classList.contains("sure")){del.classList.add("sure");del.textContent="確定刪除";return}
+      await deleteEvent(e.id)};
+    it.dataset.id=e.id; it.append(del,ic); it.onpointerdown=ev=>listDown(ev,e,it); swipeDel(it,ic); box.appendChild(it);
   });
 }
+
+/* ---------- drag ---------- */
+let drag=null;
+function startTouchOrCapture(ev,el,activate){
+  if(drag.touch) drag.timer=setTimeout(()=>{if(drag&&drag.el===el){activate();try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}}},350);
+  else { try{el.setPointerCapture(ev.pointerId)}catch(e){} ev.preventDefault() }
+}
+function passedThreshold(ev,activate){ // 回傳 true＝開始拖曳
+  const d=drag;
+  if(d.active) return true;
+  if(Math.hypot(ev.clientX-d.x0,ev.clientY-d.y0)<5) return false;
+  if(d.touch){clearTimeout(d.timer);drag=null;return false}   // 手機上沒長按就滑動＝捲動畫面
+  activate(); return true;
+}
+// 月曆長條：拖曳換日期、拉右邊緣改結束日期
+function barDown(ev,s,el,row,kind){
+  if(ev.button>0) return; ev.stopPropagation();
+  const r=row.getBoundingClientRect(), col=Math.min(6,Math.max(0,Math.floor((ev.clientX-r.left)/(r.width/7))));
+  drag={type:"bar",s,el,kind,x0:ev.clientX,y0:ev.clientY,pid:ev.pointerId,touch:ev.pointerType!=="mouse",active:false,
+        grab:addDays(row.dataset.start,col),nds:s.ds,nde:s.de};
+  if(kind==="resize"&&drag.touch){ // 手機：按住右邊拉把就直接開始拉長，不用長按
+    try{el.setPointerCapture(ev.pointerId)}catch(e){} ev.preventDefault(); barActivate(); return;
+  }
+  startTouchOrCapture(ev,el,()=>barActivate());
+}
+function barActivate(){drag.active=true;drag.el.classList.add("dragging");document.body.classList.add("mdrag")}
+function barMove(ev){
+  if(!passedThreshold(ev,barActivate)) return;
+  const d=drag, k=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".cell")?.dataset.date;
+  d.dy=ev.clientY-d.y0;
+  if(d.kind==="move") d.el.style.transform="translate("+(ev.clientX-d.x0)+"px,"+d.dy+"px)";
+  if(!k) return;
+  if(d.kind==="move"){const n=diffDays(d.grab,k); d.nds=addDays(d.s.ds,n); d.nde=addDays(d.s.de,n)}
+  else{d.nds=d.s.ds; d.nde=k<d.s.ds?d.s.ds:k}
+  document.querySelectorAll(".cell.drop").forEach(c=>c.classList.remove("drop"));
+  document.querySelectorAll(".cell").forEach(c=>{if(c.dataset.date>=d.nds&&c.dataset.date<=d.nde)c.classList.add("drop")});
+}
+async function barUp(){
+  const d=drag; drag=null; clearTimeout(d.timer);
+  document.body.classList.remove("mdrag");
+  document.querySelectorAll(".cell.drop").forEach(c=>c.classList.remove("drop"));
+  if(d.active){
+    if(d.nds!==d.s.ds||d.nde!==d.s.de){
+      if(d.kind==="move"&&!(selected>=d.nds&&selected<=d.nde)) selected=d.nds;
+      await updateSlot(d.s.id,d.s.si,{date:d.nds,endDate:d.nde>d.nds?d.nde:""});
+    } else if(d.kind==="move"&&Math.abs(d.dy||0)>10){
+      // 在同一格裡上下拖：調整這一天的行程順序
+      const step=Math.round((d.dy)/(isPhone()?18:22))||Math.sign(d.dy);
+      const ids=[...new Set((byDate()[d.grab]||[]).map(e=>e.id))], i=ids.indexOf(d.s.id);
+      if(i<0){render();return}
+      const to=Math.max(0,Math.min(ids.length-1,i+step));
+      if(to===i){render();return}
+      ids.splice(i,1); ids.splice(to,0,d.s.id); await saveOrders(ids);
+    } else render();
+  } else openForm(d.s.id);
+}
+// 當天清單：按住行程上下拖曳，調整同一天的順序（手機要長按再拖）
+// 手機：清單裡的行程往左滑，露出「刪除」
+const DELW=84;
+function closeSwipes(except){document.querySelectorAll("#list .item.open").forEach(x=>{if(x!==except){x.classList.remove("open");x.querySelector(".icont").style.transform="";const b=x.querySelector(".sdel");b.classList.remove("sure");b.textContent="刪除"}})}
+function swipeDel(it,ic){
+  let sx=null,sy=0,dx=0,mode=null;
+  it.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;dx=0;mode=null},{passive:true});
+  it.addEventListener("touchmove",e=>{
+    if(sx===null||(drag&&drag.active)) return;
+    dx=e.touches[0].clientX-sx; const dy=e.touches[0].clientY-sy;
+    if(!mode){ if(Math.abs(dx)<8&&Math.abs(dy)<8) return; mode=Math.abs(dx)>Math.abs(dy)?"h":"v"; if(mode==="h"){closeSwipes(it);it.classList.add("swiping")} }
+    if(mode!=="h") return;
+    const base=it.classList.contains("open")?-DELW:0;
+    ic.style.transform="translateX("+Math.max(-DELW-20,Math.min(0,base+dx))+"px)";
+  },{passive:true});
+  const end=()=>{
+    if(sx===null) return; sx=null; it.classList.remove("swiping"); if(mode!=="h") return;
+    const base=it.classList.contains("open")?-DELW:0, pos=base+dx;
+    if(pos<-DELW/2){it.classList.add("open");ic.style.transform="translateX(-"+DELW+"px)"}
+    else{closeSwipes();it.classList.remove("open");ic.style.transform=""}
+    it.dataset.swiped="1"; setTimeout(()=>{delete it.dataset.swiped},350);
+  };
+  it.addEventListener("touchend",end); it.addEventListener("touchcancel",end);
+}
+function listDown(ev,e,el){
+  if(ev.button>0) return;
+  if(el.classList.contains("open")){ closeSwipes(); el.classList.remove("open"); return; }  // 已滑開：點一下收回
+  closeSwipes();
+  const items=[...$("list").querySelectorAll(".item")];
+  drag={type:"list",e,el,items,x0:ev.clientX,y0:ev.clientY,pid:ev.pointerId,touch:ev.pointerType!=="mouse",active:false,idx:items.indexOf(el),to:items.indexOf(el)};
+  startTouchOrCapture(ev,el,()=>listActivate());
+}
+function listActivate(){
+  const d=drag; d.active=true; d.rects=d.items.map(x=>x.getBoundingClientRect());
+  d.items.forEach(x=>{if(x!==d.el)x.classList.add("shift")}); d.el.classList.add("lift");
+}
+function listMove(ev){
+  if(!passedThreshold(ev,listActivate)) return;
+  const d=drag, dy=ev.clientY-d.y0, r=d.rects[d.idx], h=r.height, mid=r.top+h/2+dy;
+  d.el.style.transform="translateY("+dy+"px)";
+  let to=0; d.rects.forEach((q,i)=>{if(i!==d.idx&&q.top+q.height/2<mid)to++}); d.to=to;
+  d.items.forEach((x,i)=>{ if(i===d.idx) return;
+    const s=(d.idx<to&&i>d.idx&&i<=to)?-h:(d.idx>to&&i>=to&&i<d.idx)?h:0;
+    x.style.transform=s?"translateY("+s+"px)":"" });
+}
+async function listUp(){
+  const d=drag; drag=null; clearTimeout(d.timer);
+  if(!d.active){ if(!d.el.dataset.swiped) openForm(d.e.id); return; }
+  const ids=d.items.map(x=>x.dataset.id); const [m]=ids.splice(d.idx,1); ids.splice(d.to,0,m);
+  if(d.to===d.idx){ render(); return; }
+  await saveOrders([...new Set(ids)]);
+}
+async function saveOrders(ids){ // 依新順序重新編號 0,10,20…，只存有變的
+  for(let i=0;i<ids.length;i++){
+    const e=events[ids[i]]; if(!e||e.order===i*10) continue;
+    e.order=i*10;
+    await saveEvent(ids[i],{title:e.title,note:e.note||"",color:e.color||"c1",cal:calOf(e),slots:slotsOf(e),date:slotsOf(e)[0].date,order:i*10});
+  }
+  render();
+}
+document.addEventListener("pointermove",ev=>{ if(!drag||ev.pointerId!==drag.pid) return; drag.type==="list"?listMove(ev):barMove(ev) });
+document.addEventListener("pointerup",ev=>{ if(!drag||ev.pointerId!==drag.pid) return; drag.type==="list"?listUp(ev):barUp(ev) });
+document.addEventListener("pointercancel",ev=>{ if(!drag||ev.pointerId!==drag.pid) return; clearTimeout(drag.timer); document.body.classList.remove("mdrag"); drag=null; render() });
+document.addEventListener("touchmove",ev=>{ if(drag&&drag.active) ev.preventDefault() },{passive:false});
 
 /* ---------- form ---------- */
 function drawColors(){
   const c=$("colors"); c.innerHTML="";
-  COLORS.forEach(k=>{const s=document.createElement("span");s.className="sw"+(k===pickColor?" on":"");s.style.background="var(--"+k+")";s.onclick=()=>{pickColor=k;drawColors()};c.appendChild(s)});
+  setTimeout(()=>{const w=c.querySelector(".sw.wh"); if(w){w.textContent="字"; w.title="只有白色字";}},0);
+  COLORS.forEach(k=>{const s=document.createElement("span");s.className="sw"+(k===pickColor?" on":"");colorOf(s,k);s.onclick=()=>{pickColor=k;drawColors()};c.appendChild(s)});
 }
-function openForm(id,date){
+function addSlotRow(date,endDate){
+  const row=document.createElement("div"); row.className="slot";
+  const mk=(lab,type,val,cls)=>{const w=document.createElement("div");w.className="tm "+cls+"w";const s=document.createElement("span");s.textContent=lab;
+    const i=document.createElement("input");i.type=type;i.className=cls;i.value=val||"";i.setAttribute("aria-label",lab);w.append(s,i);return [w,i]};
+  const [w1,ds]=mk("開始日期","date",date,"sd"), [w2,de]=mk("結束日期","date",(endDate&&endDate>date)?endDate:"","ed");
+  // 點日期框任何地方都打開選日期的視窗（不只右邊的小日曆圖示）
+  [ds,de].forEach(i=>i.addEventListener("click",()=>{try{i.showPicker()}catch(e){}}));
+  ds.required=true;
+  // 結束日期可以空著（＝只有一天）；比開始日期早或一樣就清空
+  ds.addEventListener("change",()=>{ if(de.value&&de.value<=ds.value) de.value="" });
+  de.addEventListener("change",()=>{ if(de.value&&de.value<=ds.value) de.value="" });
+  const rm=document.createElement("button"); rm.type="button"; rm.className="rm"; rm.textContent="×"; rm.setAttribute("aria-label","移除這組日期");
+  rm.onclick=()=>{ if($("slots").children.length>1){row.remove();updateRm()} };
+  row.append(w1,w2,rm); $("slots").appendChild(row); updateRm(); return ds;
+}
+function updateRm(){const rows=[...$("slots").children];rows.forEach(r=>{r.querySelector(".rm").style.visibility=rows.length>1?"visible":"hidden"})}
+$("addSlot").onclick=()=>{
+  const rows=$("slots").children, last=rows[rows.length-1];
+  const q=s=>last?last.querySelector(s).value:"";
+  addSlotRow(q(".sd")||selected, q(".ed")).focus();
+};
+function openForm(id,date,preset){
   editingId=id; const e=id?events[id]:null;
   $("formTitle").textContent=e?"編輯行程":"新增行程";
-  $("fTitle").value=e?e.title:""; $("fDate").value=e?e.date:(date||selected);
-  $("fTime").value=e?(e.time||""):""; $("fNote").value=e?(e.note||""):"";
-  pickColor=e?(e.color||"c1"):"c1"; drawColors();
+  $("fTitle").value=e?e.title:""; $("fNote").value=e?(e.note||""):"";
+  $("slots").innerHTML="";
+  (e?slotsOf(e):[{date:date||selected,endDate:""}]).forEach(x=>addSlotRow(x.date,x.endDate));
+  pickColor=e&&COLORS.includes(e.color)?e.color:"c1"; drawColors();
   $("delBtn").style.visibility=e?"visible":"hidden";
+  $("delBtn").dataset.confirm=""; $("delBtn").textContent="刪除";
   $("mask").classList.add("open"); setTimeout(()=>$("fTitle").focus(),50);
 }
 function closeForm(){$("mask").classList.remove("open")}
 $("form").onsubmit=async ev=>{
   ev.preventDefault();
-  const data={title:$("fTitle").value.trim(),date:$("fDate").value,time:$("fTime").value,note:$("fNote").value.trim(),color:pickColor};
-  if(!data.title||!data.date) return;
+  const seen=new Set(), slots=[];
+  [...$("slots").children].forEach(r=>{
+    const date=r.querySelector(".sd").value;
+    let endDate=r.querySelector(".ed").value; if(!endDate||endDate<=date) endDate="";
+    const key=date+endDate;
+    if(date&&!seen.has(key)){seen.add(key);slots.push({date,endDate})}
+  });
+  sortSlots(slots);
+  const title=$("fTitle").value.trim();
+  if(!title||!slots.length) return;
+  const old=editingId&&events[editingId];
+  const data={title,note:$("fNote").value.trim(),color:pickColor,cal:old?calOf(old):curCal,slots,date:slots[0].date,...(old&&old.order!=null?{order:old.order}:{})};
   const id=editingId||("e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
-  selected=data.date; const [y,m]=data.date.split("-").map(Number); view=new Date(y,m-1,1);
+  if(!slots.some(x=>selected>=x.date&&selected<=(x.endDate||x.date))) selected=data.date;
+  const sd=parse(selected); view=new Date(sd.getFullYear(),sd.getMonth(),1);
   closeForm(); await saveEvent(id,data);
 };
 $("delBtn").onclick=async()=>{
   if($("delBtn").dataset.confirm!=="1"){$("delBtn").dataset.confirm="1";$("delBtn").textContent="再按一次確認刪除";return}
-  $("delBtn").dataset.confirm="";$("delBtn").textContent="刪除";
   const id=editingId; closeForm(); if(id) await deleteEvent(id);
 };
 $("cancelBtn").onclick=closeForm;
 $("mask").onclick=e=>{if(e.target===$("mask"))closeForm()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeForm()});
 
+/* ---------- 多個日曆：切換、新增、改名、刪除 ---------- */
+let calEdit=null, calDel=null;
+const mkBtn=(cls,txt,title)=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=txt;if(title){b.title=title;b.setAttribute("aria-label",title)}return b};
+function drawCals(){
+  const box=$("calList"); box.innerHTML="";
+  cals.forEach((c,idx)=>{
+    const row=document.createElement("div"); row.className="crow"+(c.id===curCal?" on":"");
+    if(calEdit===c.id){
+      const f=document.createElement("form"); f.className="cedit";
+      const i=document.createElement("input"); i.value=c.name; i.maxLength=20; i.setAttribute("aria-label","日曆名稱");
+      const ok=mkBtn("primary","儲存"); ok.type="submit"; const no=mkBtn("","取消");
+      f.onsubmit=async ev=>{ev.preventDefault();const n=i.value.trim();if(!n)return;calEdit=null;await renameCal(c.id,n);drawCals()};
+      no.onclick=()=>{calEdit=null;drawCals()};
+      f.append(i,ok,no); row.appendChild(f); box.appendChild(row); setTimeout(()=>{i.focus();i.select()},0); return;
+    }
+    const mine=!c.owner||!myUid||c.owner===myUid;
+    const nm=mkBtn("cname",c.name); nm.onclick=()=>switchCal(c.id);
+    const n=(c.members||[]).length;
+    if(!mine||n>1){const sb=document.createElement("span");sb.className="csub";sb.textContent=(mine?"":"別人分享給你・")+"共用中："+memberNames(c).join("、");nm.appendChild(sb)}
+    const ed=mkBtn("ic pen","✎","重新命名「"+c.name+"」"); ed.onclick=()=>{calEdit=c.id;calDel=null;drawCals()};
+    row.append(nm,ed);
+    if(idx>0){ // 第一本日曆不能共用、不能刪除
+      const sh=mkBtn("ic","🔗","複製「"+c.name+"」的邀請連結"); sh.onclick=()=>shareCal(c.id);
+      const cnt=Object.values(events).filter(e=>calOf(e)===c.id).length;
+      const del=calDel===c.id
+        ? mkBtn("ic danger",mine?("確定刪除"+(cnt?"（含 "+cnt+" 個行程）":"")):"確定離開")
+        : mkBtn("ic",mine?"🗑":"離開",(mine?"刪除":"離開")+"「"+c.name+"」");
+      del.onclick=async()=>{
+        if(calDel!==c.id){calDel=c.id;drawCals();return}
+        calDel=null; await removeCal(c.id); drawCals();
+      };
+      row.append(sh,del);
+    }
+    box.appendChild(row);
+  });
+}
+function switchCal(id){curCal=id;try{localStorage.setItem("cal-current",id)}catch(e){};closeCal();render()}
+function openCal(){calEdit=null;calDel=null;drawCals();$("calpop").hidden=false;$("calBtn").setAttribute("aria-expanded","true")}
+function closeCal(){$("calpop").hidden=true;calEdit=null;calDel=null;$("calBtn").setAttribute("aria-expanded","false")}
+$("calBtn").onclick=ev=>{ev.stopPropagation();closeYM();$("calpop").hidden?openCal():closeCal()};
+$("calpop").onclick=ev=>ev.stopPropagation();
+$("calAdd").onsubmit=async ev=>{
+  ev.preventDefault(); const n=$("calNew").value.trim(); if(!n) return;
+  $("calNew").value=""; await addCal(n); closeCal();
+};
+document.addEventListener("click",()=>{if(!$("calpop").hidden)closeCal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCal()});
+
+/* ---------- 選擇年份和月份 ---------- */
+let pyear=view.getFullYear();
+function drawYM(){
+  $("yLab").textContent=pyear+" 年";
+  const g=$("mGrid"); g.innerHTML=""; const now=new Date();
+  for(let m=0;m<12;m++){
+    const b=document.createElement("button"); b.type="button"; b.textContent=(m+1)+" 月";
+    if(pyear===view.getFullYear()&&m===view.getMonth()) b.classList.add("on");
+    else if(pyear===now.getFullYear()&&m===now.getMonth()) b.classList.add("now");
+    b.onclick=()=>{view=new Date(pyear,m,1);closeYM();render()};
+    g.appendChild(b);
+  }
+}
+function openYM(){pyear=view.getFullYear();drawYM();$("ympop").hidden=false;$("titleBtn").setAttribute("aria-expanded","true")}
+function closeYM(){$("ympop").hidden=true;$("titleBtn").setAttribute("aria-expanded","false")}
+$("titleBtn").onclick=ev=>{ev.stopPropagation();closeCal();$("ympop").hidden?openYM():closeYM()};
+$("ympop").onclick=ev=>ev.stopPropagation();
+$("yPrev").onclick=()=>{pyear--;drawYM()};
+$("yNext").onclick=()=>{pyear++;drawYM()};
+document.addEventListener("click",()=>{if(!$("ympop").hidden)closeYM()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeYM()});
+
 /* ---------- nav ---------- */
-$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
-$("next").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+// 整月備忘：每本日曆、每個月各一份，打字後自動儲存
+const ymKey=()=>view.getFullYear()+"-"+String(view.getMonth()+1).padStart(2,"0");
+let memoTimer=null, memoPend=null;
+function fitMemo(){const t=$("memo");t.style.height="auto";t.style.height=Math.max(72,t.scrollHeight+2)+"px"}
+function flushMemo(){clearTimeout(memoTimer);memoTimer=null;if(memoPend){const p=memoPend;memoPend=null;saveMemo(p.k,p.v)}}
+function renderMemo(){
+  $("memoTitle").textContent=(view.getMonth()+1)+"月備忘錄";
+  const t=$("memo"), k=curCal+"|"+ymKey();
+  if(t.dataset.key===k&&document.activeElement===t) return;   // 正在打字時不要被同步蓋掉
+  if(t.dataset.key!==k) flushMemo();
+  t.dataset.key=k; t.value=memos[k]||""; fitMemo();
+}
+$("memo").addEventListener("input",()=>{const t=$("memo"),k=t.dataset.key; fitMemo(); memos[k]=t.value; memoPend={k,v:t.value}; clearTimeout(memoTimer); memoTimer=setTimeout(flushMemo,700)});
+$("memo").addEventListener("blur",()=>{flushMemo();renderMemo()});
+addEventListener("pagehide",flushMemo);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)flushMemo()});
+function shift(n){
+  view.setMonth(view.getMonth()+n);
+  render();
+}
+$("prev").onclick=()=>shift(-1);
+$("next").onclick=()=>shift(1);
 $("todayBtn").onclick=()=>{view=new Date();view.setDate(1);selected=ymd(new Date());render()};
 $("addBtn").onclick=()=>openForm(null);
 $("fab").onclick=()=>openForm(null);
-// swipe left/right on phone to change month
-let sx=null;$("grid").addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
-$("grid").addEventListener("touchend",e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>60){view.setMonth(view.getMonth()+(dx<0?1:-1));render()}sx=null});
+// 手機：左右滑動換月份／換天
+// 手機：手指左右滑，月曆跟著移動（旁邊露出上／下個月）；放開後滑過去
+function swipe(el){
+  let sx=null,sy=0,dx=0,mode=null,busy=false;
+  el.style.touchAction="pan-y";
+  const go=(x,t)=>{el.style.transition=t?"transform "+t+"s cubic-bezier(.2,.8,.2,1)":"none";el.style.transform=x?"translateX("+x+"px)":""};
+  const addPeeks=()=>{
+    const map=byDate();
+    [["prev",-1],["next",1]].forEach(([cls,n])=>{
+      const g=document.createElement("div"); g.className="grid peek "+cls;
+      fillMonth(g,new Date(view.getFullYear(),view.getMonth()+n,1),map,false); el.appendChild(g);
+    });
+  };
+  const dropPeeks=()=>el.querySelectorAll(".peek").forEach(g=>g.remove());
+  el.addEventListener("touchstart",e=>{if(busy||e.touches.length>1){sx=null;return} sx=e.touches[0].clientX;sy=e.touches[0].clientY;dx=0;mode=null;go(0)},{passive:true});
+  el.addEventListener("touchmove",e=>{
+    if(sx===null||(drag&&drag.active)) return;
+    dx=e.touches[0].clientX-sx; const dy=e.touches[0].clientY-sy;
+    if(!mode){ if(Math.abs(dx)<8&&Math.abs(dy)<8) return; mode=Math.abs(dx)>Math.abs(dy)?"h":"v";
+      if(mode==="h"){ if(drag){clearTimeout(drag.timer);drag=null} addPeeks() } }
+    if(mode!=="h") return;
+    e.preventDefault(); go(dx);
+  },{passive:false});
+  const end=()=>{
+    if(sx===null) return; sx=null; if(mode!=="h") return;
+    const w=el.offsetWidth; busy=true;
+    if(Math.abs(dx)>Math.min(80,w*.2)){
+      const dir=dx<0?1:-1; go(-dir*w,.22);
+      setTimeout(()=>{ shift(dir); dropPeeks(); go(0); busy=false },230);
+    } else { go(0,.2); setTimeout(()=>{dropPeeks();busy=false},210) }
+  };
+  el.addEventListener("touchend",end); el.addEventListener("touchcancel",end);
+}
+swipe($("track"));
+let lastPhone=isPhone(); addEventListener("resize",()=>{if(isPhone()!==lastPhone){lastPhone=isPhone();render()}});
 
 initStore();
 </script>
