@@ -198,12 +198,11 @@
     .app{padding:10px}
     .cell{min-height:96px;padding:3px 2px;text-align:center}
     .mrow{--bx:1px}
-    .mbar{height:16px;line-height:16px;font-size:10.5px;padding:0 3px;border-radius:5px !important;letter-spacing:-.02em}
-    .mbar.cl{padding-left:4px}
-    .mbar.hasrh{padding-right:15px}
-    .mbar .rh{width:16px;background:rgba(0,0,0,.18)}
-    .mbar .rh::after{display:block;right:5px;top:3px;bottom:3px;width:5px;border-radius:2px;opacity:.9;
-      background:repeating-linear-gradient(90deg,currentColor 0 1.5px,transparent 1.5px 3.5px)}
+    .mbar{height:16px;line-height:16px;font-size:9.5px;padding:0 1px;border-radius:4px !important;letter-spacing:-.06em;text-overflow:clip}
+    .mbar.cl{padding-left:2px}
+    .mbar.hasrh{padding-right:1px}
+    .mbar .rh{width:12px;background:none}
+    .mbar .rh::after{display:block;right:1px;top:3px;bottom:3px;width:2px;border-radius:1px;opacity:.6;background:currentColor}
     .num{width:24px;height:24px;font-size:12px}
     .more{left:0;right:0;text-align:center;bottom:2px;font-size:10px}
     .addc{margin:1px auto 0;width:20px;height:20px;line-height:20px;font-size:13px}
@@ -728,7 +727,7 @@ function barActivate(){drag.active=true;drag.el.classList.add("dragging");docume
 function barMove(ev){
   if(!passedThreshold(ev,barActivate)) return;
   const d=drag, k=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".cell")?.dataset.date;
-  d.dy=ev.clientY-d.y0;
+  d.dy=ev.clientY-d.y0; d.mx=Math.max(d.mx||0,Math.abs(ev.clientX-d.x0));
   if(d.kind==="move") d.el.style.transform="translate("+(ev.clientX-d.x0)+"px,"+d.dy+"px)";
   if(!k) return;
   if(d.kind==="move"){const n=diffDays(d.grab,k); d.nds=addDays(d.s.ds,n); d.nde=addDays(d.s.de,n)}
@@ -752,7 +751,8 @@ async function barUp(){
       const to=Math.max(0,Math.min(ids.length-1,i+step));
       if(to===i){render();return}
       ids.splice(i,1); ids.splice(to,0,d.s.id); await saveOrders(ids);
-    } else render();
+    } else if(d.kind==="resize"&&(d.mx||0)<8) openForm(d.s.id);   // 只是點到右邊拉把＝打開編輯
+    else render();
   } else openForm(d.s.id);
 }
 // 當天清單：按住行程上下拖曳，調整同一天的順序（手機要長按再拖）
