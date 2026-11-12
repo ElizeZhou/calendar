@@ -48,6 +48,7 @@
   .crow.on .cname{font-weight:700;color:#5e0808}
   .crow .ic{border:none;background:none;padding:6px 8px;color:var(--muted);flex:none}
   .crow .ic:hover{color:var(--ink)}
+  .impbtn{width:100%;margin-top:8px;border-style:dashed;color:var(--muted);font-size:14px}
   .crow .ic.pen{font-size:24px;line-height:1;padding:2px 7px}
   .crow .ic.danger{color:#fff;background:var(--sun);border-radius:8px;font-size:12px}
   .cedit{display:flex;gap:4px;flex:1;padding:4px}
@@ -232,6 +233,8 @@
           <div id="calList"></div>
           <div class="cnote">🔗 第一本以外的日曆可以複製連結，邀請別人一起編輯</div>
           <form id="calAdd" class="caladd"><input id="calNew" maxlength="20" placeholder="請輸入日曆名稱" aria-label="新日曆名稱"><button type="submit" class="primary">新增</button></form>
+          <button type="button" id="impBtn" class="impbtn">匯入行程到這本日曆</button>
+          <input type="file" id="impFile" accept=".ics,.json,text/calendar,application/json" hidden>
         </div>
       </div>
       <span class="sp"></span>
@@ -874,6 +877,52 @@ $("form").onsubmit=async ev=>{
   if(!slots.some(x=>selected>=x.date&&selected<=(x.endDate||x.date))) selected=data.date;
   const sd=parse(selected); view=new Date(sd.getFullYear(),sd.getMonth(),1);
   closeForm(); await saveEvent(id,data);
+};
+// ---- 匯入行程（.ics 或整理好的 .json）到目前這本日曆 ----
+function icsDate(v){const m=String(v||"").match(/(\d{4})(\d{2})(\d{2})/);return m?m[1]+"-"+m[2]+"-"+m[3]:""}
+function parseICS(txt){
+  const lines=txt.replace(/\r\n[ \t]/g,"").replace(/\n[ \t]/g,"").split(/\r?\n/); const out=[]; let ev=null;
+  const un=v=>v.replace(/\\n/gi,"\n").replace(/\\([,;\\])/g,"$1");
+  for(const ln of lines){
+    if(ln==="BEGIN:VEVENT"){ev={};continue}
+    if(ln==="END:VEVENT"){if(ev&&ev.date)out.push(ev);ev=null;continue}
+    if(!ev)continue;
+    const i=ln.indexOf(":"); if(i<0)continue; const key=ln.slice(0,i), val=ln.slice(i+1), k=key.split(";")[0].toUpperCase();
+    if(k==="SUMMARY")ev.title=un(val).trim();
+    else if(k==="DESCRIPTION")ev.note=un(val).trim();
+    else if(k==="DTSTART"){ev.date=icsDate(val);ev.allDay=/VALUE=DATE/i.test(key)||!/T/.test(val)}
+    else if(k==="DTEND")ev.end=icsDate(val);
+  }
+  return out.map(e=>{let end=e.end||"";
+    if(end&&e.allDay){const d=parse(end);d.setDate(d.getDate()-1);end=ymd(d)} // 全天行程的結束日是「隔天」
+    return {title:e.title||"（無標題）",date:e.date,endDate:end>e.date?end:"",note:e.note||""}});
+}
+const COLOR_NAMES={"字":"c1","白":"c1","橘":"c2","紫":"c4","綠":"c5","墨綠":"c5","紅":"c6","黃":"c7","粉":"c8","粉紅":"c8"};
+function parseJSONImport(txt){
+  let j=JSON.parse(txt); if(!Array.isArray(j)) j=j.events||[];
+  return j.map(e=>{const date=e.date||e.start||"", end=e.endDate||e.end||"";
+    const c=COLORS.includes(e.color)?e.color:(COLOR_NAMES[e.color]||"c1");
+    return {title:String(e.title||"（無標題）").trim(),date,endDate:end>date?end:"",note:String(e.note||"").trim(),color:c}}).filter(e=>/^\d{4}-\d{2}-\d{2}$/.test(e.date));
+}
+$("impBtn").onclick=()=>$("impFile").click();
+$("impFile").onchange=async ev=>{
+  const f=ev.target.files[0]; ev.target.value=""; if(!f) return;
+  let list=[];
+  try{ const txt=await f.text(); list=/^\s*[\[{]/.test(txt)?parseJSONImport(txt):parseICS(txt) }
+  catch(e){ showToast("這個檔案讀不懂，請確認是 .ics 或 .json 檔"); return }
+  if(!list.length){ showToast("檔案裡沒有找到行程"); return }
+  const have=new Set(Object.values(events).filter(e=>calOf(e)===curCal).flatMap(e=>slotsOf(e).map(x=>e.title+"|"+x.date+"|"+(x.endDate||""))));
+  let n=0, skip=0; $("calpop").hidden=true;
+  showToast("匯入中…（共 "+list.length+" 個）");
+  for(const e of list){
+    const k=e.title+"|"+e.date+"|"+(e.endDate||"");
+    if(have.has(k)){skip++;continue} have.add(k);
+    const id="e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    await saveEvent(id,{title:e.title,note:e.note||"",color:e.color||"c1",cal:curCal,slots:[{date:e.date,endDate:e.endDate||""}],date:e.date});
+    n++;
+  }
+  render();
+  showToast("已匯入 "+n+" 個行程到「"+curName()+"」"+(skip?"（"+skip+" 個重複的已略過）":""));
 };
 $("delBtn").onclick=async()=>{
   if($("delBtn").dataset.confirm!=="1"){$("delBtn").dataset.confirm="1";$("delBtn").textContent="再按一次確認刪除";return}
