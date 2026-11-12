@@ -86,7 +86,7 @@
   .peek.next{left:100%} .peek.prev{right:100%}
   .dow div{padding:10px 0;text-align:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)}
   .dow div:first-child,.dow div:last-child{color:var(--sun)}
-  .cell{min-height:118px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;cursor:pointer;position:relative;overflow:hidden}
+  .cell{min-height:120px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;cursor:pointer;position:relative;overflow:hidden}
   .cell.last{border-right:none}
   .cell.other{opacity:.38}
   .cell.sel{background:color-mix(in srgb,var(--accent) 18%,transparent)}
@@ -105,14 +105,14 @@
     font-size:16px;line-height:23px;text-align:center;z-index:3;animation:pop .15s ease-out}
   .addc:hover{filter:brightness(1.1)}
   @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
-  .mrow.hasadd .cell{min-height:146px}
+  .mrow.hasadd .cell{min-height:148px}
   .mbar.hol{--col:var(--hol);color:#fff;font-weight:700;cursor:default;pointer-events:none}
   .holname{color:var(--hol);font-weight:700;font-size:14px;margin:-2px 0 10px}
   .num{font-size:13px;font-weight:500;display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:50%}
   .cell.today .num{color:#fff}
   .ev{font-size:12px;line-height:1.3;padding:2px 6px;margin-top:3px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
   .ev:hover{filter:brightness(1.06);box-shadow:0 1px 4px rgba(0,0,0,.18)}
-  .more{font-size:11px;color:var(--muted);position:absolute;left:8px;bottom:4px}
+  .more{font-size:12px;font-weight:700;color:#ff4655;position:absolute;left:8px;line-height:16px;white-space:nowrap}
   .dots{display:none;gap:3px;justify-content:center;margin-top:2px}
   .dot{width:7px;height:7px;border-radius:50%}
   /* 整月備忘 */
@@ -196,7 +196,7 @@
     .nav .sp{flex:1}
     #addBtn{display:none}
     .app{padding:10px}
-    .cell{min-height:96px;padding:3px 2px;text-align:center}
+    .cell{min-height:104px;padding:3px 2px;text-align:center}
     .mrow{--bx:1px}
     .mbar{height:16px;line-height:16px;font-size:9.5px;padding:0 1px;border-radius:4px !important;letter-spacing:-.06em;text-overflow:clip}
     .mbar.cl{padding-left:2px}
@@ -204,9 +204,9 @@
     .mbar .rh{width:12px;background:none}
     .mbar .rh::after{display:block;right:1px;top:3px;bottom:3px;width:2px;border-radius:1px;opacity:.6;background:currentColor}
     .num{width:24px;height:24px;font-size:12px}
-    .more{left:0;right:0;text-align:center;bottom:2px;font-size:10px}
+    .more{left:0;right:0;text-align:center;font-size:10px;line-height:14px}
     .addc{margin:1px auto 0;width:20px;height:20px;line-height:20px;font-size:13px}
-    .mrow.hasadd .cell{min-height:118px}
+    .mrow.hasadd .cell{min-height:126px}
     .cal{border-radius:12px}
     .fab{display:flex;position:fixed;right:18px;bottom:22px;width:56px;height:56px;border-radius:50%;font-size:28px;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);padding:0;z-index:40}
     aside{padding:14px}
@@ -647,7 +647,7 @@ function fillMonth(grid,v,map,live){
         add.onclick=ev=>{ev.stopPropagation();openForm(null,key)}; add.ondblclick=ev=>ev.stopPropagation();
         cell.appendChild(add);
       }
-      if(hidden[i]){const m=document.createElement("div");m.className="more";m.textContent=isPhone()?"+"+hidden[i]:"還有 "+hidden[i]+" 項";cell.appendChild(m)}
+      if(hidden[i]){const m=document.createElement("div");m.className="more";m.textContent="+"+hidden[i]+" 待辦";m.style.top=(top+MAXLANE*LANEH)+"px";cell.appendChild(m)}
       const dots=document.createElement("div"); dots.className="dots";
       list.slice(0,4).forEach(e=>{const s=document.createElement("span");s.className="dot";colorOf(s,e.color);dots.appendChild(s)});
       cell.appendChild(dots);
